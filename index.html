@@ -16,6 +16,29 @@ html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-we
 .rotate-hint{display:none}
 @media(orientation:portrait) and (pointer:coarse){.rotate-hint{display:flex;position:fixed;inset:0;z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px;text-align:center;background:linear-gradient(160deg,#773044,#3a2030);color:#fff8f4}.rotate-hint svg{width:72px;height:72px;stroke-width:1.5;animation:rotHint 2.2s ease-in-out infinite}.rotate-hint b{font-size:22px;letter-spacing:-.4px}.rotate-hint span{font-size:14px;opacity:.8;max-width:280px;line-height:1.5}}
 @keyframes rotHint{0%,20%{transform:rotate(0)}50%,80%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
+.manager-chat{display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;padding:8px 0;margin-bottom:12px}
+.msg{display:flex;gap:8px;align-items:flex-start}
+.msg.user{flex-direction:row-reverse}
+.msg-bubble{max-width:85%;padding:10px 14px;border-radius:14px;font-size:12px;line-height:1.5}
+.msg.bot .msg-bubble{background:#fff;border:1px solid #dce4e8;color:#2c3e47}
+.msg.user .msg-bubble{background:#ed8b3d;color:#fff;border-radius:14px 14px 4px 14px}
+.msg-avatar{width:28px;height:28px;border-radius:8px;background:#773044;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+.msg.user .msg-avatar{background:#3f5561}
+.chat-input-bar{display:flex;gap:7px;margin-bottom:14px}
+.chat-input-bar input{flex:1;height:42px;border:1px solid #dce4e8;border-radius:10px;padding:0 12px;font-size:13px;background:#fff}
+.chat-input-bar button{padding:0 14px;border-radius:10px;background:#ed8b3d;color:#fff;display:grid;place-items:center}
+.quick-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:none}
+.chip{white-space:nowrap;font-size:10px;font-weight:700;padding:6px 11px;border-radius:20px;background:#fff;border:1px solid #dce4e8;color:#5a6d77;cursor:pointer}
+.chip:hover{background:#fff3e6;color:#c07328;border-color:#f1cfa8}
+.confirm-box{background:#fff5ea;border:1.5px solid #f2bc80;border-radius:13px;padding:12px 14px;margin:8px 0}
+.confirm-box h4{margin:0 0 5px;color:#a05d1f;font-size:12px;display:flex;align-items:center;gap:6px}
+.confirm-box p{margin:0 0 10px;font-size:11px;color:#6b523b;line-height:1.5}
+.confirm-actions{display:flex;gap:7px}
+.confirm-actions button{flex:1;min-height:36px;font-size:11px;font-weight:800;border-radius:8px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px;margin-bottom:12px}
+.kpi-card{background:#fff;border:1px solid #e0e6e9;border-radius:11px;padding:9px 11px}
+.kpi-card small{display:block;font-size:9px;color:#88979e;margin-bottom:3px}
+.kpi-card b{font-size:17px;color:#334852}
 </style></head><body>
 <div class="rotate-hint" role="alert"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><b>Gira tu teléfono</b><span>Logistic Control funciona solo en horizontal.</span></div>
 <canvas id="world" aria-label="Mapa isométrico interactivo de la bodega. Toca un trabajador para seleccionarlo y un pasillo para moverlo."></canvas>
@@ -26,7 +49,7 @@ html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-we
 <div class="world-tip">Toca un trabajador · toca el suelo para moverlo<br>Arrastra para explorar</div>
 <div class="world-control" aria-label="Control de vista"><button class="icon-slot" data-icon="minus" data-action="zoomOut" aria-label="Alejar"></button><span id="zoomLabel">100%</span><button class="icon-slot" data-icon="plus" data-action="zoomIn" aria-label="Acercar"></button><span class="sep"></span><button class="icon-slot" data-icon="fit" data-action="fit" aria-label="Ver toda la bodega"></button><button class="icon-slot" data-icon="locate" data-action="follow" aria-label="Centrar trabajador seleccionado"></button></div>
 <div class="worker-dock"><div class="worker-avatar" id="workerAvatar">A</div><div class="worker-info"><b id="workerName">Ana · Recepción</b><small id="workerStatus">Disponible</small></div><button class="dock-btn icon-slot" data-icon="task" data-action="assignSelected" aria-label="Asignar tarea al trabajador seleccionado"></button></div>
-<nav class="bottom-nav" aria-label="Navegación principal"><button class="nav-btn active" data-panel="world"><span class="icon-slot" data-icon="home"></span>BODEGA</button><button class="nav-btn" data-panel="team"><span class="icon-slot" data-icon="team"></span>EQUIPO</button><button class="nav-btn" data-panel="purchases"><span class="icon-slot" data-icon="cart"></span>COMPRAS<span class="badge" id="ordersBadge"></span></button><button class="nav-btn" data-panel="inventory"><span class="icon-slot" data-icon="box"></span>STOCK</button><button class="nav-btn" data-panel="activity"><span class="icon-slot" data-icon="activity"></span>ACTIVIDAD</button></nav>
+<nav class="bottom-nav" aria-label="Navegación principal"><button class="nav-btn active" data-panel="world"><span class="icon-slot" data-icon="home"></span>BODEGA</button><button class="nav-btn" data-panel="manager" style="color:#d9732a;font-weight:900"><span class="icon-slot" data-icon="bot"></span>GERENTE</button><button class="nav-btn" data-panel="team"><span class="icon-slot" data-icon="team"></span>EQUIPO</button><button class="nav-btn" data-panel="purchases"><span class="icon-slot" data-icon="cart"></span>COMPRAS<span class="badge" id="ordersBadge"></span></button><button class="nav-btn" data-panel="inventory"><span class="icon-slot" data-icon="box"></span>STOCK</button><button class="nav-btn" data-panel="activity"><span class="icon-slot" data-icon="activity"></span>ACTIVIDAD</button></nav>
 <div class="sim-control"><span class="sim-label">Tiempo de simulación</span><button id="pauseButton" data-action="pause" aria-label="Pausar simulación"></button><button id="speedButton" data-action="speed" aria-label="Cambiar velocidad de simulación">1×</button></div><div id="fps"></div>
 <div class="intro" id="intro"><div><strong>Tu centro logístico, en movimiento</strong>Abre Solicitudes para registrar un conteo y abastecer una sucursal. Toca personajes y áreas para dirigir el trabajo.</div><button data-action="dismissIntro">Entendido</button></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -346,14 +369,16 @@ const ICONS={
  truck:'<path d="M2 5h12v13H2zM14 10h4l4 4v4h-8"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/>',
  snow:'<path d="M12 2v20M3 7l18 10M3 17 21 7M9 4l3 3 3-3M9 20l3-3 3 3M4 10l3-1V5M17 19v-4l3-1M4 14l3 1v4M17 5v4l3 1"/>',
  check:'<path d="m5 12 4 4L19 6"/>',layers:'<path d="m12 3 10 6-10 6L2 9zM3 13l9 5 9-5M3 17l9 5 9-5"/>',
- download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>'
+ download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
+ bot:'<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 16h.01M16 16h.01M9 19h6"/>',
+ send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'
 };
 const icon=(name)=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]||ICONS.box}</svg>`;
 function button(text,action,kind='primary',symbol=''){return `<button class="${kind}" data-action="${action}">${symbol?icon(symbol):''}${text}</button>`}
 function tag(s,kind=''){return `<span class="tag ${kind}">${esc(s)}</span>`}
 function stats(a,al,b,bl){return `<div class="stats"><div class="stat"><strong>${a}</strong><small>${al}</small></div><div class="stat"><strong>${b}</strong><small>${bl}</small></div></div>`}
 function productSymbol(p){return `<div class="product-symbol" style="${p.zone==='cold'?'background:#e9f3f7;color:#86a9b8':''}">${icon(p.zone==='cold'?'snow':'box')}</div>`}
-const panelNames={purchases:['Abastecer mi bodega','Compras, entregas y recepción'],purchase:['Nuevo pedido','Catálogo de práctica · Bodega central'],receipt:['Validar entrega','Cantidades reales de la entrega simulada'],team:['Mi equipo','Selecciona, asigna y observa el trabajo'],assign:['Asignar tarea','Trabajadores simulados dentro de tu bodega'],inventory:['Inventario','Existencias, reservas y lotes'],activity:['Actividad','Movimientos de esta partida'],reception:['Recepción','Entregas y lotes pendientes de ubicación'],dispatch:['Despachos a sucursales','Preparación, reserva y salida de productos'],branch:['Nueva solicitud','Pedido de una sucursal a la bodega'],cold:['Cámara fría','Inspección y fechas de vencimiento'],settings:['Ajustes','Simulación, controles y respaldo'],help:['Una bodega que puedes dirigir','Vista isométrica · Gestión con personajes'],bin:['Lote recibido','Asigna su ubicación a un trabajador']};
+const panelNames={manager:['Gerente General IA · Control Operativo','Toma de decisiones, auditoría, compras y tareas autónomas'],purchases:['Abastecer mi bodega','Compras, entregas y recepción'],purchase:['Nuevo pedido','Catálogo de práctica · Bodega central'],receipt:['Validar entrega','Cantidades reales de la entrega simulada'],team:['Mi equipo','Selecciona, asigna y observa el trabajo'],assign:['Asignar tarea','Trabajadores simulados dentro de tu bodega'],inventory:['Inventario','Existencias, reservas y lotes'],activity:['Actividad','Movimientos de esta partida'],reception:['Recepción','Entregas y lotes pendientes de ubicación'],dispatch:['Despachos a sucursales','Preparación, reserva y salida de productos'],branch:['Nueva solicitud','Pedido de una sucursal a la bodega'],cold:['Cámara fría','Inspección y fechas de vencimiento'],settings:['Ajustes','Simulación, controles y respaldo'],help:['Una bodega que puedes dirigir','Vista isométrica · Gestión con personajes'],bin:['Lote recibido','Asigna su ubicación a un trabajador']};
 let renderedRevision=-1;
 function openPanel(name,context=''){if(name==='world'){closePanel();return}if(name==='zone')name=context==='office'?'purchases':context==='storage'?'inventory':context;activePanel=name;panelContext=context;const titles=panelNames[name]||['Bodega viva',''];$('#panelTitle').textContent=titles[0];$('#panelSub').textContent=titles[1];$('#panelBody').innerHTML=renderPanel(name,context);$('#overlay').classList.add('show');$('#sheet').setAttribute('aria-label',titles[0]);renderedRevision=panelRevision;$$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));if(name==='purchase')refreshQuote();setTimeout(()=>$('#closeModal').focus({preventScroll:true}),0);}
 function closePanel(){activePanel='';panelContext='';$('#overlay').classList.remove('show');$$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.panel==='world'));}
@@ -548,10 +573,251 @@ renderPanel=function(name,context=''){
  ['Despacha y entrega','Confirma despacho cuando las cajas estén listas. El origen se descuenta; la carga sigue en tránsito hasta que confirmes recepción en destino.'],
  ['Controla','Pausa detiene tareas y vehículos, pero permite acciones manuales. Usa x1, x2 o x4. El avance se guarda localmente; exporta una copia en Ajustes.']
  ].map((a,i)=>`<div class="help-step"><b>${i+1}</b><div><strong>${a[0]}</strong><br>${a[1]}</div></div>`).join('')}<h3>Supuestos utilizados</h3><ol class="assumptions"><li>Un edificio central y cinco sucursales representadas por solicitudes.</li><li>Tres empresas sin razón social predefinida; asignación manual en Configuración.</li><li>Empleados, existencias, precios, proveedores y tiempos son ejemplos editables. No son cotizaciones reales.</li><li>Cantidades enteras: kg, sacos de 50 lb, paquetes, bolsas, botellas, unidades y paquetes de 100 servilletas. Una caja visual representa un lote completo.</li><li>Recepción de compra por entrega completa; faltantes posteriores requieren otra compra. La resolución de una diferencia no ajusta stock automáticamente.</li><li>Envíos internos completos; la recepción confirma el contenido preparado. Sin pérdidas automáticas ni entregas parciales en tránsito.</li><li>Presupuesto ficticio inicial Q 25,000; transporte sin costo, impuestos ni pagos reales. Compras en 25 s; envíos en 35 s de simulación.</li><li>Guardar depende del navegador. No hay sincronización multiusuario, backend ni conexión al inventario oficial.</li></ol>${button('Comenzar','close','primary')}`;
+ let managerMessages=window.managerChatMessages||[
+  {role:'bot',text:'¡Hola! Soy tu **Gerente General IA**. Superviso bodega central, las 5 sucursales, compras, inventario y a todo el personal. Dime qué deseas hacer o pregúntame el estado de la operación.'}
+ ];
+ window.managerChatMessages=managerMessages;
+ let managerPendingAction=window.managerPendingAction||null;
+ window.managerPendingAction=managerPendingAction;
+
+ function runManagerCommand(text){
+  const raw=text.trim();
+  if(!raw)return;
+  managerMessages.push({role:'user',text:raw});
+  const t=raw.toLowerCase();
+  let reply='';
+  let proposedAction=null;
+
+  // Analizar intenciones del usuario
+  if(/hola|buen|saludo|ayuda|qué puedes hacer|que puedes hacer/.test(t)){
+   reply='Puedo coordinar toda tu operación:\n- 📦 **Mover/Organizar lotes:** Pon a trabajar a Sofía, Luis o Marta.\n- 🛒 **Comprar productos:** Reponer faltantes o comprar insumos específicos.\n- 📋 **Revisar solicitudes:** Aprobar pedidos de sucursales (Jalapa, Zacapa, etc.).\n- ❄️ **Inspeccionar frío:** Enviar a revisar caducidades y lotes.\n- 📊 **Auditoría completa:** Decirte qué falta, qué sobra y qué implementar.';
+  }
+  else if(/diagn[oó]stico|qu[eé] falta|que falta|auditor[ií]a|c[oó]mo est[aá]|estado|reporte|resumen/.test(t)){
+   const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
+   const bins=data.bins.filter(b=>!b.stored);
+   const reqs=data.requests.filter(r=>r.status==='Pendiente');
+   const prep=data.requests.filter(r=>r.status==='Preparado');
+   const diffs=data.discrepancies.filter(d=>d.status==='Pendiente');
+   const coldExp=data.lots.filter(l=>product(l.prod).zone==='cold'&&Math.floor((Date.parse(l.expiry+'T12:00:00')-Date.parse(localDate()+'T12:00:00'))/86400000)<8);
+
+   reply=`📊 **Diagnóstico Operativo:**\n`+
+    `• Presupuesto disponible: ${money(data.cash)}\n`+
+    `• Stock bajo mínimo: ${low.length?low.map(p=>`${p.name} (quedan ${availableQty(p.id)} de mín ${p.min})`).join(', '):'Ninguno, stock saludable ✅'}\n`+
+    `• Lotes en recepción por ubicar: ${bins.length} lote(s)\n`+
+    `• Solicitudes sucursales por aprobar: ${reqs.length} solicitud(es)\n`+
+    `• Pedidos preparados para despachar: ${prep.length} listo(s)\n`+
+    `• Discrepancias / incidencias: ${diffs.length} caso(s)\n`+
+    `• Lotes fríos por vencer pronto: ${coldExp.length} lote(s)\n\n`+
+    `💡 **Recomendación del Gerente:** `+(bins.length?'Debemos poner a los operarios a acomodar lotes.' : low.length?'Necesitamos emitir una orden de compra.' : reqs.length?'Debemos aprobar solicitudes de sucursales.' : 'La operación marcha al 100%.');
+  }
+  else if(/organiza|acomoda|ubica|guardar|mover|lotes|recepci[oó]n|equipo a trabajar/.test(t)){
+   const unassigned=data.bins.filter(b=>!b.stored&&!data.jobs.some(j=>j.bin===b.id&&['queued','active'].includes(j.status)));
+   if(!unassigned.length){
+    reply='✅ Todos los lotes recibidos ya están ubicados en sus estantes o ya tienen a un trabajador asignado.';
+   } else {
+    reply=`Detecté **${unassigned.length} lote(s)** en recepción sin guardar. ¿Deseas que asigne inmediatamente a Sofía, Luis y Marta para trasladarlos a sus estanterías?`;
+    proposedAction={type:'organize_all',desc:`Asignar a los operarios el traslado de ${unassigned.length} lote(s) en recepción.`};
+   }
+  }
+  else if(/compr|abastec|repon|surtir/.test(t)){
+   const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
+   if(!low.length){
+    reply='Todos los productos están por encima del stock mínimo central. Si aún así deseas comprar un insumo específico, indícame el producto y cantidad.';
+   } else {
+    const costEst=low.reduce((s,p)=>s+(p.min*2-p.qty)*CATALOG[p.id],0);
+    reply=`⚠️ Hay **${low.length} producto(s) bajo el mínimo**: ${low.map(p=>p.name).join(', ')}.\nCosto estimado de reposición: ${money(costEst)}.\nPresupuesto disponible: ${money(data.cash)}.\n¿Autorizas generar la orden de compra automática?`;
+    proposedAction={type:'reorder_low',desc:`Generar orden de compra a proveedor para reponer: ${low.map(p=>p.name).join(', ')}.`};
+   }
+  }
+  else if(/aprob|autoriz|solicitud|sucursal|pedidos sucursales/.test(t)){
+   const pend=data.requests.filter(r=>r.status==='Pendiente');
+   if(!pend.length){
+    reply='No hay solicitudes pendientes de sucursales por aprobar en este momento.';
+   } else {
+    reply=`Hay **${pend.length} solicitud(es) pendiente(s)**:\n`+
+     pend.map(r=>`• ${r.id} (${r.branch}) - ${r.lines.map(l=>`${product(l.prod).name}: ${l.qty}`).join(', ')}`).join('\n')+
+     `\n\n¿Autorizas aprobarlas para mandarlas a preparación?`;
+    proposedAction={type:'approve_all_requests',desc:`Aprobar las ${pend.length} solicitudes de sucursales pendientes.`};
+   }
+  }
+  else if(/prepar|empaque|alistar/.test(t)){
+   const appr=data.requests.filter(r=>r.status==='Aprobado');
+   if(!appr.length){
+    reply='No hay solicitudes aprobadas esperando preparación.';
+   } else {
+    reply=`Hay **${appr.length} solicitud(es) aprobada(s)** listas para preparación en bodega:\n`+
+     appr.map(r=>`• ${r.id} (${r.branch})`).join('\n')+
+     `\n¿Deseas que envíe a los operarios a recoger los productos y llevarlos a la mesa de preparación?`;
+    proposedAction={type:'prepare_all',desc:`Poner a los trabajadores a preparar las ${appr.length} solicitudes aprobadas.`};
+   }
+  }
+  else if(/despach|envi|salida|camion|camión|entregar/.test(t)){
+   const ready=data.requests.filter(r=>r.status==='Preparado');
+   if(!ready.length){
+    reply='No hay cajas preparadas en el muelle listas para despachar en este momento.';
+   } else {
+    reply=`📦 Hay **${ready.length} pedido(s) empacado(s)** y listo(s) en muelle:\n`+
+     ready.map(r=>`• ${r.id} para ${r.branch}`).join('\n')+
+     `\n¿Autorizas la salida del camión para enviarlo a las sucursales?`;
+    proposedAction={type:'dispatch_all',desc:`Confirmar despacho y salida del camión para: ${ready.map(r=>r.branch).join(', ')}.`};
+   }
+  }
+  else if(/inspecc|c[aá]mara fr[ií]a|vencimient|caducidad|revisar fr[ií]o/.test(t)){
+   reply='¿Deseas que envíe a un trabajador a inspeccionar la cámara fría y validar las fechas de caducidad?';
+   proposedAction={type:'inspect_cold',desc:'Enviar operario a realizar inspección completa de cámara fría.'};
+  }
+  else if(/qu[eé] falta implementar|qu[eé] necesito implementar|falta algo|mejoras/.test(t)){
+   reply='🛠️ **Análisis de requerimientos para el sistema:**\n'+
+    '1. **Facturación electrónica (FEL):** Actualmente registras factura manual, faltaría emitir DTE formal.\n'+
+    '2. **Lector de código de barras / QR:** Para escanear cajas desde la cámara del teléfono.\n'+
+    '3. **Rastreo GPS de camiones:** Visualización en mapa real del trayecto entre bodega central y Jalapa/Zacapa.\n'+
+    '4. **Alertas Push automáticas:** Avisos cuando un producto baje de stock o cuando llegue un camión sin tener que mirar la pantalla.\n'+
+    '5. **Sincronización multi-usuario en la nube:** Base de datos para que cada sucursal solicite desde su propio teléfono.';
+  }
+  else {
+   reply='Entendido. Como Gerente General puedo ayudarte con compras, organizar lotes con los operarios, aprobar solicitudes, despachar camiones o auditar faltantes. Dime qué acción deseas ejecutar.';
+  }
+
+  managerMessages.push({role:'bot',text:reply,action:proposedAction});
+  managerPendingAction=proposedAction;
+  window.managerPendingAction=proposedAction;
+  save();
+  openPanel('manager');
+ }
+
+ function executeManagerAction(actionObj){
+  if(!actionObj)return;
+  if(actionObj.type==='organize_all'){
+   const count=queueAllBins();
+   managerMessages.push({role:'bot',text:`🚀 **Órdenes ejecutadas:** He asignado a ${count} lote(s) al equipo de operarios. Ya están en camino a mover las cajas.`});
+  }
+  else if(actionObj.type==='reorder_low'){
+   const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
+   const lines=low.map(p=>({prod:p.id,qty:Math.max(10,p.min*2-p.qty),received:0,price:CATALOG[p.id]}));
+   const total=lines.reduce((s,l)=>s+l.qty*l.price,0);
+   if(total>data.cash){
+    managerMessages.push({role:'bot',text:`❌ No hay suficiente presupuesto (${money(data.cash)}) para cubrir el total de ${money(total)}.`});
+   } else {
+    const o={id:'OC-'+data.purchaseSeq++,supplier:'central',supplierName:SUPPLIERS['central'],destination:'central',request:'',lines,total,eta:25,status:'En camino',receiptClosed:false,note:'Compra automática por Gerente General IA',created:new Date().toISOString()};
+    data.purchases.push(o);
+    data.cash=Math.round((data.cash-total)*100)/100;
+    log('PEDIDO GERENTE IA',`${o.id} · ${money(total)} · Reposición automática de ${low.length} productos`);
+    managerMessages.push({role:'bot',text:`🛒 **Compra generada:** Orden **${o.id}** creada por ${money(total)}. Llegará a recepción en 25 segundos.`});
+   }
+  }
+  else if(actionObj.type==='approve_all_requests'){
+   const pend=data.requests.filter(r=>r.status==='Pendiente');
+   for(const r of pend){
+    r.status='Aprobado';
+    log('APROBACIÓN GERENTE IA',`${r.id} · ${r.branch} autorizada`);
+   }
+   managerMessages.push({role:'bot',text:`✅ He aprobado **${pend.length} solicitud(es)** de sucursales. Ya están listas para preparación.`});
+  }
+  else if(actionObj.type==='prepare_all'){
+   const appr=data.requests.filter(r=>r.status==='Aprobado');
+   let c=0;
+   for(const r of appr){
+    if(queueDispatch(r.id))c++;
+   }
+   managerMessages.push({role:'bot',text:`👷 He asignado al personal la preparación de **${c} solicitud(es)**.`});
+  }
+  else if(actionObj.type==='dispatch_all'){
+   const ready=data.requests.filter(r=>r.status==='Preparado');
+   for(const r of ready){
+    confirmDispatch(r.id);
+   }
+   managerMessages.push({role:'bot',text:`🚚 **Camiones en ruta:** Se confirmaron los despachos de ${ready.length} pedido(s). Los vehículos van rumbo a su destino.`});
+  }
+  else if(actionObj.type==='inspect_cold'){
+   queueInspection();
+   managerMessages.push({role:'bot',text:'❄️ Tarea de inspección de cámara fría asignada a un operario disponible.'});
+  }
+  managerPendingAction=null;
+  window.managerPendingAction=null;
+  flush();
+  openPanel('manager');
+ }
+
+ if(name==='manager'){
+  const lowCount=data.inventory.filter(p=>availableQty(p.id)<p.min).length;
+  const unassignedBins=data.bins.filter(b=>!b.stored&&!data.jobs.some(j=>j.bin===b.id&&['queued','active'].includes(j.status))).length;
+  const pendRequests=data.requests.filter(r=>r.status==='Pendiente').length;
+  const readyDispatch=data.requests.filter(r=>r.status==='Preparado').length;
+
+  return `
+   <div class="note warm" style="display:flex;align-items:center;gap:10px">
+    <div style="font-size:24px">🤖</div>
+    <div><strong>Gerente General Autónomo</strong><br>Supervisa el flujo, asigna tareas a los trabajadores y toma decisiones operativas bajo tu confirmación.</div>
+   </div>
+
+   <div class="kpi-row">
+    <div class="kpi-card"><small>Presupuesto</small><b>${money(data.cash)}</b></div>
+    <div class="kpi-card"><small>Stock Crítico</small><b style="color:${lowCount?'#d44':'#2a8'}">${lowCount} prod.</b></div>
+    <div class="kpi-card"><small>Lotes libres</small><b>${unassignedBins}</b></div>
+    <div class="kpi-card"><small>Solicitudes</small><b>${pendRequests}</b></div>
+    <div class="kpi-card"><small>Listos despacho</small><b>${readyDispatch}</b></div>
+   </div>
+
+   <div class="quick-chips">
+    <button class="chip" data-ai-prompt="¿Cuál es el estado de la bodega y qué falta?">📊 Diagnóstico y qué falta</button>
+    <button class="chip" data-ai-prompt="Pon a los trabajadores a acomodar los lotes de recepción">📦 Mover lotes al almacén</button>
+    <button class="chip" data-ai-prompt="Revisar y reponer productos con stock bajo mínimo">🛒 Reponer mínimos</button>
+    <button class="chip" data-ai-prompt="Aprobar las solicitudes de sucursales pendientes">📋 Aprobar solicitudes</button>
+    <button class="chip" data-ai-prompt="Manda a preparar los pedidos aprobados">👷 Preparar pedidos</button>
+    <button class="chip" data-ai-prompt="Despachar todos los pedidos listos en el muelle">🚚 Despachar camiones</button>
+    <button class="chip" data-ai-prompt="¿Qué necesito implementar en el sistema?">🛠️ Qué falta implementar</button>
+    <button class="chip" data-ai-prompt="Manda a inspeccionar la cámara fría">❄️ Inspeccionar frío</button>
+   </div>
+
+   <div class="manager-chat" id="managerChatBox">
+    ${managerMessages.map(m=>`
+     <div class="msg ${m.role}">
+      <div class="msg-avatar">${m.role==='bot'?'IA':'TÚ'}</div>
+      <div class="msg-bubble">
+       ${esc(m.text).replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}
+       ${m.action ? `
+        <div class="confirm-box">
+         <h4>⚠️ Acción propuesta por el Gerente:</h4>
+         <p>${esc(m.action.desc)}</p>
+         <div class="confirm-actions">
+          <button class="primary" data-action="managerConfirm">Autorizar y ejecutar</button>
+          <button class="secondary" data-action="managerReject">Cancelar</button>
+         </div>
+        </div>
+       `:''}
+      </div>
+     </div>
+    `).join('')}
+   </div>
+
+   <div class="chat-input-bar">
+    <input id="managerInput" type="text" placeholder="Escribe al Gerente: ej. 'organiza los lotes', 'qué falta', 'reponer stock'..." autocomplete="off">
+    <button id="managerSendBtn" data-action="managerSend" aria-label="Enviar">${icon('send')}</button>
+   </div>
+  `;
+ }
  return baseRenderPanel(name,context);
 };
 const baseAction=action;
 action=function(a){const [kind,...parts]=a.split(':'),id=parts.join(':');
+ if(kind==='managerSend'){
+  const inp=$('#managerInput');
+  if(inp){runManagerCommand(inp.value);inp.value=''}
+  return;
+ }
+ if(kind==='managerConfirm'){
+  if(window.managerPendingAction){
+   executeManagerAction(window.managerPendingAction);
+  }
+  return;
+ }
+ if(kind==='managerReject'){
+  window.managerPendingAction=null;
+  window.managerChatMessages.push({role:'bot',text:'Acción cancelada por el usuario.'});
+  openPanel('manager');
+  return;
+ }
+
  if(kind==='submitRequest'){submitRequest();return}if(kind==='approve'){approveRequest(id);return}if(kind==='prepare'){if(queueDispatch(id)){closePanel();focusZone('prep')}return}if(kind==='prepareWorker'){if(queueDispatch(parts[1],parts[0])){closePanel();focusZone('prep')}return}if(kind==='cancelPrep'){cancelPreparation(id);openPanel('prep');return}if(kind==='ship'){confirmDispatch(id);return}if(kind==='arrive'){confirmDestination(id);return}if(kind==='requestPurchase'){purchaseForRequest(id);return}if(kind==='saveWorker'){editWorker(id);return}if(kind==='saveConfig'){saveConfiguration();return}if(kind==='saveProduct'){saveProduct(id);return}if(kind==='resolveSave'){resolveDiscrepancy(id);return}
  if(kind==='exportBackup'){flush();download('logistic_control_copia.json',JSON.stringify({format:'logistic-control-v5',data:{...data,workers:workers.map(({path,walk,manual,...w})=>w)}},null,2),'application/json');return}
  if(kind==='zone'&&id==='office'){openPanel('requests');return}if(kind==='worker'){selectWorker(id);openPanel('worker',id);return}if(['review','resolve','assign','productEdit'].includes(kind)){openPanel(kind,id);return}
@@ -567,7 +833,20 @@ handleMapTap=function(x,y){const h=[...workerHits].reverse().find(r=>hit(r,x,y))
 validateImport=function(payload){if(payload?.format!=='logistic-control-v5'||payload.data?.schema!==5)throw Error('Usa una copia de Logistic Control v5.');const s=payload.data,ids=Object.keys(CATALOG),list=['inventory','workers','purchases','bins','lots','requests','shipments','discrepancies','jobs','companies','logs','ops'];for(const k of list)if(!Array.isArray(s[k])||s[k].length>5000)throw Error('Datos inválidos: '+k);if(s.inventory.length!==9||new Set(s.inventory.map(p=>p.id)).size!==9||s.inventory.some(p=>!ids.includes(p.id)||!Number.isSafeInteger(p.qty)||p.qty<0||p.qty>1e7||typeof p.name!=='string'||p.name.length>60||!validQty(p.min)))throw Error('Inventario inválido.');if(!Number.isFinite(s.cash)||s.cash<0||s.cash>25000||!Number.isSafeInteger(s.purchaseSeq)||s.purchaseSeq<2050||!Number.isSafeInteger(s.dispatchSeq)||s.dispatchSeq<201)throw Error('Contadores inválidos.');for(const b of BRANCHES)for(const id of ids)if(!Number.isSafeInteger(s.branchStock?.[b]?.[id])||s.branchStock[b][id]<0||!validQty(s.branchIdeal?.[b]?.[id]))throw Error('Saldo de sucursal inválido.');if(s.companies.length!==3||s.companies.some((e,i)=>e.id!=='e'+(i+1)||typeof e.name!=='string'||e.name.length>80))throw Error('Empresas inválidas.');for(const b of BRANCHES)if(!s.branchConfig?.[b]||!['ViPizza','American Pizza'].includes(s.branchConfig[b].brand)||!['','e1','e2','e3'].includes(s.branchConfig[b].company))throw Error('Asignación inválida.');for(const id of ids)if(!Number.isFinite(s.prices?.[id])||s.prices[id]<=0||s.prices[id]>10000)throw Error('Precio inválido.');for(const k of Object.keys(SUPPLIERS))if(typeof s.supplierNames?.[k]!=='string'||s.supplierNames[k].length>80)throw Error('Proveedor inválido.');const linesOK=ls=>Array.isArray(ls)&&ls.length>0&&ls.length<=9&&new Set(ls.map(l=>l.prod)).size===ls.length&&ls.every(l=>ids.includes(l.prod)&&validQty(l.qty)&&l.qty>0);for(const r of s.requests)if(typeof r.id!=='string'||!BRANCHES.includes(r.branch)||!linesOK(r.lines)||!['Pendiente','Aprobado','En preparación','Preparado','Compra directa','Incidencia','Cerrado con diferencia','En camino','Entregado','Cancelado'].includes(r.status))throw Error('Solicitud inválida.');for(const o of s.purchases)if(!linesOK(o.lines)||!['central',...BRANCHES].includes(o.destination)||!Number.isFinite(o.eta)||o.eta<0||o.eta>25||!Number.isFinite(o.total)||o.total<0||o.lines.some(l=>!validQty(l.received)||!Number.isFinite(l.price)||l.price<=0))throw Error('Compra inválida.');for(const sh of s.shipments)if(!linesOK(sh.lines)||!BRANCHES.includes(sh.branch)||!['En camino','Entregado'].includes(sh.status)||!Number.isFinite(sh.eta)||sh.eta<0||sh.eta>35)throw Error('Envío inválido.');for(const b of [...s.bins,...s.lots])if(!ids.includes(b.prod)||!validQty(b.qty)||!b.qty||typeof b.lot!=='string'||typeof b.expiry!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(b.expiry))throw Error('Lote inválido.');for(const k of ['purchases','requests','shipments','bins'])if(new Set(s[k].map(v=>v.id)).size!==s[k].length)throw Error('Identificador duplicado.');for(const d of s.discrepancies)if(!ids.includes(d.prod)||!validQty(d.ordered)||!validQty(d.invoiced)||!validQty(d.received))throw Error('Diferencia inválida.');for(const p of s.inventory){const pending=s.bins.filter(b=>!b.stored&&b.prod===p.id).reduce((a,b)=>a+b.qty,0);if(pending>p.qty)throw Error('Lotes y stock inconsistentes.');}for(const k of ['purchases','requests','shipments','bins','lots','discrepancies'])if(s[k].some(v=>typeof v.id!=='string'||!/^[-A-Za-z0-9_]{1,90}$/.test(v.id)))throw Error('Identificador inválido.');const out=JSON.parse(JSON.stringify(s));out.inventory=makeInitial().inventory.map(p=>{const old=s.inventory.find(v=>v.id===p.id);return {...p,name:old.name,qty:old.qty,min:old.min}});out.jobs=[];out.workers=initialWorkers().map(w=>{const old=s.workers.find(v=>v.id===w.id);return {...w,name:typeof old?.name==='string'?old.name.slice(0,30):w.name,role:typeof old?.role==='string'?old.role.slice(0,45):w.role}});for(const r of out.requests)if(['En preparación','Preparado'].includes(r.status)){r.status='Aprobado';r.lines.forEach(l=>l.packed=false)}out.bins.forEach(b=>delete b.isoPos);out.isoPrefs={speed:1,auto:false,names:true,grid:true,sound:false};return out;};
 document.addEventListener('input',e=>{if(e.target.dataset.suggest)suggestLine(e.target.dataset.suggest)});
 document.addEventListener('change',e=>{if(e.target.id==='requestBranch')fillRequestBranch()});
-$('#ledgerToggle').addEventListener('click',()=>{$('#eventLedger').classList.toggle('collapsed');$('#ledgerToggle').setAttribute('aria-expanded',!$('#eventLedger').classList.contains('collapsed'))});
+$('#ledgerToggle')?.addEventListener('click',()=>{$('#eventLedger').classList.toggle('collapsed');$('#ledgerToggle').setAttribute('aria-expanded',!$('#eventLedger').classList.contains('collapsed'))});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&e.target?.id==='managerInput'){
+  e.preventDefault();
+  const inp=$('#managerInput');
+  if(inp){runManagerCommand(inp.value);inp.value=''}
+ }
+});
+document.addEventListener('click',e=>{
+ const chip=e.target.closest('[data-ai-prompt]');
+ if(chip){
+  runManagerCommand(chip.dataset.aiPrompt);
+ }
+});
 start();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 function lockLandscape(){try{screen.orientation?.lock?.('landscape').catch(()=>{})}catch{}}lockLandscape();addEventListener('pointerdown',lockLandscape,{once:true});
