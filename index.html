@@ -39,6 +39,16 @@ html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-we
 .kpi-card{background:#fff;border:1px solid #e0e6e9;border-radius:11px;padding:9px 11px}
 .kpi-card small{display:block;font-size:9px;color:#88979e;margin-bottom:3px}
 .kpi-card b{font-size:17px;color:#334852}
+.mic-btn{width:42px;height:42px;border-radius:10px;background:#3f5561;color:#fff;display:grid;place-items:center;transition:all .2s ease;cursor:pointer;flex:none;border:none}
+.mic-btn:hover{background:#506a77}
+.mic-btn.listening{background:#e53e3e!important;color:#fff!important;animation:pulseMic 1.2s infinite}
+@keyframes pulseMic{0%,100%{box-shadow:0 0 0 0 rgba(229,62,62,.7);transform:scale(1)}50%{box-shadow:0 0 0 10px rgba(229,62,62,0);transform:scale(1.08)}}
+.voice-bar{display:flex;align-items:center;justify-content:space-between;background:#fdf6ee;border:1px solid #f6d4ad;border-radius:11px;padding:8px 12px;margin-bottom:12px;gap:8px}
+.voice-bar-info{display:flex;align-items:center;gap:7px;font-size:12px;color:#77481b;font-weight:700}
+.voice-bar-actions{display:flex;gap:6px}
+.voice-action-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;border:1px solid #dce4e8;background:#fff;color:#3f5561;cursor:pointer}
+.voice-action-btn:hover{background:#f4f7f9}
+.voice-action-btn.active{background:#e67e22;color:#fff;border-color:#d36b13}
 </style></head><body>
 <div class="rotate-hint" role="alert"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg><b>Gira tu teléfono</b><span>Logistic Control funciona solo en horizontal.</span></div>
 <canvas id="world" aria-label="Mapa isométrico interactivo de la bodega. Toca un trabajador para seleccionarlo y un pasillo para moverlo."></canvas>
@@ -371,7 +381,11 @@ const ICONS={
  check:'<path d="m5 12 4 4L19 6"/>',layers:'<path d="m12 3 10 6-10 6L2 9zM3 13l9 5 9-5M3 17l9 5 9-5"/>',
  download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
  bot:'<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 16h.01M16 16h.01M9 19h6"/>',
- send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'
+ send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>',
+  speaker:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+  speakerMute:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>'
 };
 const icon=(name)=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]||ICONS.box}</svg>`;
 function button(text,action,kind='primary',symbol=''){return `<button class="${kind}" data-action="${action}">${symbol?icon(symbol):''}${text}</button>`}
@@ -574,249 +588,432 @@ renderPanel=function(name,context=''){
  ['Controla','Pausa detiene tareas y vehículos, pero permite acciones manuales. Usa x1, x2 o x4. El avance se guarda localmente; exporta una copia en Ajustes.']
  ].map((a,i)=>`<div class="help-step"><b>${i+1}</b><div><strong>${a[0]}</strong><br>${a[1]}</div></div>`).join('')}<h3>Supuestos utilizados</h3><ol class="assumptions"><li>Un edificio central y cinco sucursales representadas por solicitudes.</li><li>Tres empresas sin razón social predefinida; asignación manual en Configuración.</li><li>Empleados, existencias, precios, proveedores y tiempos son ejemplos editables. No son cotizaciones reales.</li><li>Cantidades enteras: kg, sacos de 50 lb, paquetes, bolsas, botellas, unidades y paquetes de 100 servilletas. Una caja visual representa un lote completo.</li><li>Recepción de compra por entrega completa; faltantes posteriores requieren otra compra. La resolución de una diferencia no ajusta stock automáticamente.</li><li>Envíos internos completos; la recepción confirma el contenido preparado. Sin pérdidas automáticas ni entregas parciales en tránsito.</li><li>Presupuesto ficticio inicial Q 25,000; transporte sin costo, impuestos ni pagos reales. Compras en 25 s; envíos en 35 s de simulación.</li><li>Guardar depende del navegador. No hay sincronización multiusuario, backend ni conexión al inventario oficial.</li></ol>${button('Comenzar','close','primary')}`;
  let managerMessages=window.managerChatMessages||[
-  {role:'bot',text:'¡Hola! Soy tu **Gerente General IA**. Superviso bodega central, las 5 sucursales, compras, inventario y a todo el personal. Dime qué deseas hacer o pregúntame el estado de la operación.'}
- ];
- window.managerChatMessages=managerMessages;
- let managerPendingAction=window.managerPendingAction||null;
- window.managerPendingAction=managerPendingAction;
+   {role:'bot',text:'¡Hola! Soy tu **Gerente General IA**. Superviso la bodega central y las 5 sucursales. Puedes hablarme tocando el micrófono 🎙️ o escribir. Pídeme un reporte diciendo: *"Dame un reporte de todo lo que pasa"*, o indícame qué deseas ordenar al equipo.'}
+  ];
+  window.managerChatMessages=managerMessages;
+  let managerPendingAction=window.managerPendingAction||null;
+  window.managerPendingAction=managerPendingAction;
+  window.managerVoiceEnabled=(window.managerVoiceEnabled!==undefined)?window.managerVoiceEnabled:true;
+  let isVoiceActive=false;
+  let managerRec=null;
 
- function runManagerCommand(text){
-  const raw=text.trim();
-  if(!raw)return;
-  managerMessages.push({role:'user',text:raw});
-  const t=raw.toLowerCase();
-  let reply='';
-  let proposedAction=null;
-
-  // Analizar intenciones del usuario
-  if(/hola|buen|saludo|ayuda|qué puedes hacer|que puedes hacer/.test(t)){
-   reply='Puedo coordinar toda tu operación:\n- 📦 **Mover/Organizar lotes:** Pon a trabajar a Sofía, Luis o Marta.\n- 🛒 **Comprar productos:** Reponer faltantes o comprar insumos específicos.\n- 📋 **Revisar solicitudes:** Aprobar pedidos de sucursales (Jalapa, Zacapa, etc.).\n- ❄️ **Inspeccionar frío:** Enviar a revisar caducidades y lotes.\n- 📊 **Auditoría completa:** Decirte qué falta, qué sobra y qué implementar.';
+  function cleanTextForVoice(txt){
+   return txt
+    .replace(/\*\*(.*?)\*\*/g,'$1')
+    .replace(/•/g,', ')
+    .replace(/Q\s*([\d,]+(\.\d+)?)/g,'$1 quetzales')
+    .replace(/[🤖📦🛒📋👷🚚❄️🛠️⚠️📊💡✅❌🎙️🗣️]/g,'')
+    .replace(/(\n)+/g,'. ')
+    .replace(/#/g,'')
+    .replace(/([0-9]+)\s*x/gi,'$1 veces')
+    .trim();
   }
-  else if(/diagn[oó]stico|qu[eé] falta|que falta|auditor[ií]a|c[oó]mo est[aá]|estado|reporte|resumen/.test(t)){
-   const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
-   const bins=data.bins.filter(b=>!b.stored);
-   const reqs=data.requests.filter(r=>r.status==='Pendiente');
-   const prep=data.requests.filter(r=>r.status==='Preparado');
-   const diffs=data.discrepancies.filter(d=>d.status==='Pendiente');
-   const coldExp=data.lots.filter(l=>product(l.prod).zone==='cold'&&Math.floor((Date.parse(l.expiry+'T12:00:00')-Date.parse(localDate()+'T12:00:00'))/86400000)<8);
 
-   reply=`📊 **Diagnóstico Operativo:**\n`+
-    `• Presupuesto disponible: ${money(data.cash)}\n`+
-    `• Stock bajo mínimo: ${low.length?low.map(p=>`${p.name} (quedan ${availableQty(p.id)} de mín ${p.min})`).join(', '):'Ninguno, stock saludable ✅'}\n`+
-    `• Lotes en recepción por ubicar: ${bins.length} lote(s)\n`+
-    `• Solicitudes sucursales por aprobar: ${reqs.length} solicitud(es)\n`+
-    `• Pedidos preparados para despachar: ${prep.length} listo(s)\n`+
-    `• Discrepancias / incidencias: ${diffs.length} caso(s)\n`+
-    `• Lotes fríos por vencer pronto: ${coldExp.length} lote(s)\n\n`+
-    `💡 **Recomendación del Gerente:** `+(bins.length?'Debemos poner a los operarios a acomodar lotes.' : low.length?'Necesitamos emitir una orden de compra.' : reqs.length?'Debemos aprobar solicitudes de sucursales.' : 'La operación marcha al 100%.');
-  }
-  else if(/organiza|acomoda|ubica|guardar|mover|lotes|recepci[oó]n|equipo a trabajar/.test(t)){
-   const unassigned=data.bins.filter(b=>!b.stored&&!data.jobs.some(j=>j.bin===b.id&&['queued','active'].includes(j.status)));
-   if(!unassigned.length){
-    reply='✅ Todos los lotes recibidos ya están ubicados en sus estantes o ya tienen a un trabajador asignado.';
-   } else {
-    reply=`Detecté **${unassigned.length} lote(s)** en recepción sin guardar. ¿Deseas que asigne inmediatamente a Sofía, Luis y Marta para trasladarlos a sus estanterías?`;
-    proposedAction={type:'organize_all',desc:`Asignar a los operarios el traslado de ${unassigned.length} lote(s) en recepción.`};
+  function speakManagerVoice(text,force=false){
+   if((!window.managerVoiceEnabled&&!force)||!('speechSynthesis' in window))return;
+   try{
+    window.speechSynthesis.cancel();
+    const clean=cleanTextForVoice(text);
+    if(!clean)return;
+    const utter=new SpeechSynthesisUtterance(clean);
+    utter.lang='es-GT';
+    utter.rate=1.05;
+    utter.pitch=1.0;
+    const voices=window.speechSynthesis.getVoices();
+    const es=voices.find(v=>v.lang.startsWith('es-')||v.lang.startsWith('es_')||v.lang==='es');
+    if(es)utter.voice=es;
+    window.speechSynthesis.speak(utter);
+   }catch(e){
+    console.warn('TTS error:',e);
    }
   }
-  else if(/compr|abastec|repon|surtir/.test(t)){
-   const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
-   if(!low.length){
-    reply='Todos los productos están por encima del stock mínimo central. Si aún así deseas comprar un insumo específico, indícame el producto y cantidad.';
-   } else {
-    const costEst=low.reduce((s,p)=>s+(p.min*2-p.qty)*CATALOG[p.id],0);
-    reply=`⚠️ Hay **${low.length} producto(s) bajo el mínimo**: ${low.map(p=>p.name).join(', ')}.\nCosto estimado de reposición: ${money(costEst)}.\nPresupuesto disponible: ${money(data.cash)}.\n¿Autorizas generar la orden de compra automática?`;
-    proposedAction={type:'reorder_low',desc:`Generar orden de compra a proveedor para reponer: ${low.map(p=>p.name).join(', ')}.`};
+
+  function stopManagerSpeech(){
+   if('speechSynthesis' in window){
+    window.speechSynthesis.cancel();
+    toast('Voz silenciada.');
    }
-  }
-  else if(/aprob|autoriz|solicitud|sucursal|pedidos sucursales/.test(t)){
-   const pend=data.requests.filter(r=>r.status==='Pendiente');
-   if(!pend.length){
-    reply='No hay solicitudes pendientes de sucursales por aprobar en este momento.';
-   } else {
-    reply=`Hay **${pend.length} solicitud(es) pendiente(s)**:\n`+
-     pend.map(r=>`• ${r.id} (${r.branch}) - ${r.lines.map(l=>`${product(l.prod).name}: ${l.qty}`).join(', ')}`).join('\n')+
-     `\n\n¿Autorizas aprobarlas para mandarlas a preparación?`;
-    proposedAction={type:'approve_all_requests',desc:`Aprobar las ${pend.length} solicitudes de sucursales pendientes.`};
-   }
-  }
-  else if(/prepar|empaque|alistar/.test(t)){
-   const appr=data.requests.filter(r=>r.status==='Aprobado');
-   if(!appr.length){
-    reply='No hay solicitudes aprobadas esperando preparación.';
-   } else {
-    reply=`Hay **${appr.length} solicitud(es) aprobada(s)** listas para preparación en bodega:\n`+
-     appr.map(r=>`• ${r.id} (${r.branch})`).join('\n')+
-     `\n¿Deseas que envíe a los operarios a recoger los productos y llevarlos a la mesa de preparación?`;
-    proposedAction={type:'prepare_all',desc:`Poner a los trabajadores a preparar las ${appr.length} solicitudes aprobadas.`};
-   }
-  }
-  else if(/despach|envi|salida|camion|camión|entregar/.test(t)){
-   const ready=data.requests.filter(r=>r.status==='Preparado');
-   if(!ready.length){
-    reply='No hay cajas preparadas en el muelle listas para despachar en este momento.';
-   } else {
-    reply=`📦 Hay **${ready.length} pedido(s) empacado(s)** y listo(s) en muelle:\n`+
-     ready.map(r=>`• ${r.id} para ${r.branch}`).join('\n')+
-     `\n¿Autorizas la salida del camión para enviarlo a las sucursales?`;
-    proposedAction={type:'dispatch_all',desc:`Confirmar despacho y salida del camión para: ${ready.map(r=>r.branch).join(', ')}.`};
-   }
-  }
-  else if(/inspecc|c[aá]mara fr[ií]a|vencimient|caducidad|revisar fr[ií]o/.test(t)){
-   reply='¿Deseas que envíe a un trabajador a inspeccionar la cámara fría y validar las fechas de caducidad?';
-   proposedAction={type:'inspect_cold',desc:'Enviar operario a realizar inspección completa de cámara fría.'};
-  }
-  else if(/qu[eé] falta implementar|qu[eé] necesito implementar|falta algo|mejoras/.test(t)){
-   reply='🛠️ **Análisis de requerimientos para el sistema:**\n'+
-    '1. **Facturación electrónica (FEL):** Actualmente registras factura manual, faltaría emitir DTE formal.\n'+
-    '2. **Lector de código de barras / QR:** Para escanear cajas desde la cámara del teléfono.\n'+
-    '3. **Rastreo GPS de camiones:** Visualización en mapa real del trayecto entre bodega central y Jalapa/Zacapa.\n'+
-    '4. **Alertas Push automáticas:** Avisos cuando un producto baje de stock o cuando llegue un camión sin tener que mirar la pantalla.\n'+
-    '5. **Sincronización multi-usuario en la nube:** Base de datos para que cada sucursal solicite desde su propio teléfono.';
-  }
-  else {
-   reply='Entendido. Como Gerente General puedo ayudarte con compras, organizar lotes con los operarios, aprobar solicitudes, despachar camiones o auditar faltantes. Dime qué acción deseas ejecutar.';
   }
 
-  managerMessages.push({role:'bot',text:reply,action:proposedAction});
-  managerPendingAction=proposedAction;
-  window.managerPendingAction=proposedAction;
-  save();
-  openPanel('manager');
- }
+  function toggleVoiceRecognition(){
+   const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+   if(!SpeechRec){
+    toast('Tu navegador no soporta comandos de voz. Usa Google Chrome.');
+    return;
+   }
+   if(isVoiceActive){
+    if(managerRec){try{managerRec.stop();}catch(e){}}
+    isVoiceActive=false;
+    updateMicButtonState(false);
+    toast('Micrófono desactivado.');
+    return;
+   }
+   try{
+    managerRec=new SpeechRec();
+    managerRec.lang='es-GT';
+    managerRec.continuous=false;
+    managerRec.interimResults=false;
+    managerRec.maxAlternatives=1;
 
- function executeManagerAction(actionObj){
-  if(!actionObj)return;
-  if(actionObj.type==='organize_all'){
-   const count=queueAllBins();
-   managerMessages.push({role:'bot',text:`🚀 **Órdenes ejecutadas:** He asignado a ${count} lote(s) al equipo de operarios. Ya están en camino a mover las cajas.`});
-  }
-  else if(actionObj.type==='reorder_low'){
-   const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
-   const lines=low.map(p=>({prod:p.id,qty:Math.max(10,p.min*2-p.qty),received:0,price:CATALOG[p.id]}));
-   const total=lines.reduce((s,l)=>s+l.qty*l.price,0);
-   if(total>data.cash){
-    managerMessages.push({role:'bot',text:`❌ No hay suficiente presupuesto (${money(data.cash)}) para cubrir el total de ${money(total)}.`});
-   } else {
-    const o={id:'OC-'+data.purchaseSeq++,supplier:'central',supplierName:SUPPLIERS['central'],destination:'central',request:'',lines,total,eta:25,status:'En camino',receiptClosed:false,note:'Compra automática por Gerente General IA',created:new Date().toISOString()};
-    data.purchases.push(o);
-    data.cash=Math.round((data.cash-total)*100)/100;
-    log('PEDIDO GERENTE IA',`${o.id} · ${money(total)} · Reposición automática de ${low.length} productos`);
-    managerMessages.push({role:'bot',text:`🛒 **Compra generada:** Orden **${o.id}** creada por ${money(total)}. Llegará a recepción en 25 segundos.`});
+    managerRec.onstart=()=>{
+     isVoiceActive=true;
+     updateMicButtonState(true);
+     toast('🎙️ Escuchando... Di tu orden o pide un reporte');
+    };
+
+    managerRec.onresult=(ev)=>{
+     const transcript=ev.results[0]?.[0]?.transcript||'';
+     isVoiceActive=false;
+     updateMicButtonState(false);
+     if(transcript.trim()){
+      const inp=$('#managerInput');
+      if(inp)inp.value=transcript;
+      toast('🗣️ "'+transcript+'"');
+      runManagerCommand(transcript);
+     }
+    };
+
+    managerRec.onerror=(ev)=>{
+     isVoiceActive=false;
+     updateMicButtonState(false);
+     if(ev.error==='not-allowed'){
+      toast('Permiso de micrófono bloqueado en tu navegador.');
+     }else if(ev.error!=='no-speech'){
+      toast('Aviso de voz: '+ev.error);
+     }
+    };
+
+    managerRec.onend=()=>{
+     isVoiceActive=false;
+     updateMicButtonState(false);
+    };
+
+    managerRec.start();
+   }catch(err){
+    isVoiceActive=false;
+    updateMicButtonState(false);
+    toast('No se pudo activar micrófono: '+err.message);
    }
   }
-  else if(actionObj.type==='approve_all_requests'){
-   const pend=data.requests.filter(r=>r.status==='Pendiente');
-   for(const r of pend){
-    r.status='Aprobado';
-    log('APROBACIÓN GERENTE IA',`${r.id} · ${r.branch} autorizada`);
+
+  function updateMicButtonState(listening){
+   const btn=$('#managerMicBtn');
+   const inp=$('#managerInput');
+   if(btn){
+    btn.classList.toggle('listening',listening);
+    btn.setAttribute('aria-label',listening?'Detener micrófono':'Hablar comando de voz');
    }
-   managerMessages.push({role:'bot',text:`✅ He aprobado **${pend.length} solicitud(es)** de sucursales. Ya están listas para preparación.`});
-  }
-  else if(actionObj.type==='prepare_all'){
-   const appr=data.requests.filter(r=>r.status==='Aprobado');
-   let c=0;
-   for(const r of appr){
-    if(queueDispatch(r.id))c++;
+   if(inp){
+    if(listening){
+     inp.placeholder='🎙️ Escuchando tu voz... Habla ahora';
+    }else{
+     inp.placeholder="Escribe o usa el micrófono para hablar con el Gerente...";
+    }
    }
-   managerMessages.push({role:'bot',text:`👷 He asignado al personal la preparación de **${c} solicitud(es)**.`});
   }
-  else if(actionObj.type==='dispatch_all'){
-   const ready=data.requests.filter(r=>r.status==='Preparado');
-   for(const r of ready){
-    confirmDispatch(r.id);
+
+  function runManagerCommand(text){
+   const raw=text.trim();
+   if(!raw)return;
+   managerMessages.push({role:'user',text:raw});
+   const t=raw.toLowerCase();
+   let reply='';
+   let proposedAction=null;
+
+   if(/hola|buen|saludo|ayuda|qué puedes hacer|que puedes hacer/.test(t)){
+    reply='Puedo coordinar toda tu operación por voz o texto:\n- 🎙️ **Reporte completo:** Dime "dame un reporte de todo lo que pasa" y te lo diré hablado.\n- 📦 **Mover lotes:** "Organiza los lotes" o "pon a trabajar a los operarios".\n- 🛒 **Compras:** "Compra lo que falta" o "reponer mínimos".\n- 📋 **Sucursales:** "Aprobar solicitudes" de Jalapa, Zacapa, etc.\n- 🚚 **Despachos:** "Despacha los camiones listos".\n- ❄️ **Frío:** "Inspeccionar cámara fría".';
    }
-   managerMessages.push({role:'bot',text:`🚚 **Camiones en ruta:** Se confirmaron los despachos de ${ready.length} pedido(s). Los vehículos van rumbo a su destino.`});
+   else if(/reporte|qu[eé] pasa|que pasa|qu[eé] est[aá] pasando|que esta pasando|c[oó]mo va todo|como va todo|c[oó]mo est[aá] la bodega|diagn[oó]stico|auditor[ií]a|resumen|estado/.test(t)){
+    const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
+    const unassignedBins=data.bins.filter(b=>!b.stored&&!data.jobs.some(j=>j.bin===b.id&&['queued','active'].includes(j.status)));
+    const pendReqs=data.requests.filter(r=>r.status==='Pendiente');
+    const prepReqs=data.requests.filter(r=>r.status==='Preparado');
+    const arrivingOrders=data.purchases.filter(o=>o.eta>0&&o.status!=='Cancelado');
+    const activeShipments=data.shipments.filter(s=>s.status==='En camino');
+    const workingStaff=workers.filter(w=>w.jobId||w.manual);
+    const freeStaff=workers.filter(w=>!w.jobId&&!w.manual);
+    const diffs=data.discrepancies.filter(d=>d.status==='Pendiente');
+    const coldExp=data.lots.filter(l=>product(l.prod).zone==='cold'&&Math.floor((Date.parse(l.expiry+'T12:00:00')-Date.parse(localDate()+'T12:00:00'))/86400000)<8);
+
+    reply='🎙️ **Reporte General de Operaciones:**\n'+
+     '• **Finanzas:** Presupuesto disponible: '+money(data.cash)+'.\n'+
+     '• **Inventario Central:** '+(low.length?'⚠️ '+low.length+' producto(s) bajo el mínimo ('+low.map(p=>`${p.name}: ${availableQty(p.id)}/${p.min}`).join(', ')+').':'Stock central completo y saludable ✅.')+'\n'+
+     '• **Recepción:** '+(unassignedBins?unassignedBins+' lote(s) en el suelo esperando traslado.':'Recepción despejada ✅.')+'\n'+
+     '• **Tránsito y Proveedores:** '+(arrivingOrders.length?arrivingOrders.length+' compra(s) en camino.':'Sin pedidos de proveedores en tránsito.')+' '+(activeShipments.length?'🚚 '+activeShipments.length+' camión(es) en ruta a sucursales.':'')+'\n'+
+     '• **Sucursales:** '+(pendReqs.length?pendReqs.length+' solicitud(es) pendientes ('+pendReqs.map(r=>r.branch).join(', ')+').':'Sin solicitudes pendientes.')+' '+(prepReqs.length?'📦 '+prepReqs.length+' pedido(s) listos para despacho en muelle.':'')+'\n'+
+     '• **Equipo:** '+workingStaff.length+' trabajador(es) activos ('+workingStaff.map(w=>w.name).join(', ')+'), '+freeStaff.length+' disponible(s).\n'+
+     (diffs.length?'• **Incidencias:** '+diffs.length+' diferencia(s) de recepción pendientes.\n':'')+
+     (coldExp.length?'• **Cámara fría:** '+coldExp.length+' lote(s) por vencer pronto.\n':'')+
+     '\n💡 **Recomendación prioritaria:** '+
+     (unassignedBins?'Debemos enviar a los operarios a acomodar los '+unassignedBins+' lotes.':
+      low.length?'Debemos emitir una orden de compra para reponer insumos críticos.':
+      pendReqs.length?'Debemos aprobar las solicitudes de sucursales.':
+      prepReqs.length?'Debemos despachar los camiones listos en el muelle.':
+      'Toda la operación marcha al 100%.');
+
+    if(unassignedBins){
+     proposedAction={type:'organize_all',desc:'Asignar a los operarios el traslado de los '+unassignedBins+' lote(s) en recepción.'};
+    }else if(low.length){
+     proposedAction={type:'reorder_low',desc:'Generar orden de compra a proveedor para reponer: '+low.map(p=>p.name).join(', ')};
+    }else if(pendReqs.length){
+     proposedAction={type:'approve_all_requests',desc:'Aprobar las '+pendReqs.length+' solicitudes de sucursales pendientes.'};
+    }else if(prepReqs.length){
+     proposedAction={type:'dispatch_all',desc:'Confirmar despacho y salida del camión para: '+prepReqs.map(r=>r.branch).join(', ')};
+    }
+   }
+   else if(/organiza|acomoda|ubica|guardar|mover|lotes|recepci[oó]n|equipo a trabajar/.test(t)){
+    const unassigned=data.bins.filter(b=>!b.stored&&!data.jobs.some(j=>j.bin===b.id&&['queued','active'].includes(j.status)));
+    if(!unassigned.length){
+     reply='✅ Todos los lotes recibidos ya están ubicados en sus estantes o ya tienen a un trabajador asignado.';
+    } else {
+     reply='Detecté **'+unassigned.length+' lote(s)** en recepción sin guardar. ¿Deseas que asigne inmediatamente a Sofía, Luis y Marta para trasladarlos a sus estanterías?';
+     proposedAction={type:'organize_all',desc:'Asignar a los operarios el traslado de '+unassigned.length+' lote(s) en recepción.'};
+    }
+   }
+   else if(/compr|abastec|repon|surtir/.test(t)){
+    const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
+    if(!low.length){
+     reply='Todos los productos están por encima del stock mínimo central. Si deseas comprar algo específico, puedes abrir Compras.';
+    } else {
+     const costEst=low.reduce((s,p)=>s+(p.min*2-p.qty)*CATALOG[p.id],0);
+     reply='⚠️ Hay **'+low.length+' producto(s) bajo el mínimo**: '+low.map(p=>p.name).join(', ')+'.\nCosto estimado de reposición: '+money(costEst)+'.\nPresupuesto disponible: '+money(data.cash)+'.\n¿Autorizas generar la orden de compra automática?';
+     proposedAction={type:'reorder_low',desc:'Generar orden de compra a proveedor para reponer: '+low.map(p=>p.name).join(', ')};
+    }
+   }
+   else if(/aprob|autoriz|solicitud|sucursal|pedidos sucursales/.test(t)){
+    const pend=data.requests.filter(r=>r.status==='Pendiente');
+    if(!pend.length){
+     reply='No hay solicitudes pendientes de sucursales por aprobar en este momento.';
+    } else {
+     reply='Hay **'+pend.length+' solicitud(es) pendiente(s)**:\n'+
+      pend.map(r=>`• ${r.id} (${r.branch}) - `+r.lines.map(l=>`${product(l.prod).name}: ${l.qty}`).join(', ')).join('\n')+
+      '\n\n¿Autorizas aprobarlas para mandarlas a preparación?';
+     proposedAction={type:'approve_all_requests',desc:'Aprobar las '+pend.length+' solicitudes de sucursales pendientes.'};
+    }
+   }
+   else if(/prepar|empaque|alistar/.test(t)){
+    const appr=data.requests.filter(r=>r.status==='Aprobado');
+    if(!appr.length){
+     reply='No hay solicitudes aprobadas esperando preparación.';
+    } else {
+     reply='Hay **'+appr.length+' solicitud(es) aprobada(s)** listas para preparación en bodega:\n'+
+      appr.map(r=>`• ${r.id} (${r.branch})`).join('\n')+
+      '\n¿Deseas que envíe a los operarios a recoger los productos y llevarlos a la mesa de preparación?';
+     proposedAction={type:'prepare_all',desc:'Poner a los trabajadores a preparar las '+appr.length+' solicitudes aprobadas.'};
+    }
+   }
+   else if(/despach|envi|salida|camion|camión|entregar/.test(t)){
+    const ready=data.requests.filter(r=>r.status==='Preparado');
+    if(!ready.length){
+     reply='No hay cajas preparadas en el muelle listas para despachar en este momento.';
+    } else {
+     reply='📦 Hay **'+ready.length+' pedido(s) empacado(s)** y listo(s) en muelle:\n'+
+      ready.map(r=>`• ${r.id} para ${r.branch}`).join('\n')+
+      '\n¿Autorizas la salida del camión para enviarlo a las sucursales?';
+     proposedAction={type:'dispatch_all',desc:'Confirmar despacho y salida del camión para: '+ready.map(r=>r.branch).join(', ')};
+    }
+   }
+   else if(/inspecc|c[aá]mara fr[ií]a|vencimient|caducidad|revisar fr[ií]o/.test(t)){
+    reply='¿Deseas que envíe a un trabajador a inspeccionar la cámara fría y validar las fechas de caducidad?';
+    proposedAction={type:'inspect_cold',desc:'Enviar operario a realizar inspección completa de cámara fría.'};
+   }
+   else if(/silencio|callate|c[aá]llate|para de hablar|deten(er)? (la )?voz|stop|apaga(r)? (la )?voz/.test(t)){
+    stopManagerSpeech();
+    reply='Audio detenido. Puedes seguir consultándome por voz o texto cuando quieras.';
+   }
+   else if(/activa(r)? (la )?voz|habla|prende(r)? (la )?voz/.test(t)){
+    window.managerVoiceEnabled=true;
+    reply='Voz activada. A partir de ahora leeré los reportes y respuestas en voz alta.';
+   }
+   else if(/qu[eé] falta implementar|qu[eé] necesito implementar|falta algo|mejoras/.test(t)){
+    reply='🛠️ **Análisis de requerimientos para el sistema:**\n'+
+     '1. **Facturación electrónica (FEL):** Actualmente registras factura manual, faltaría emitir DTE formal.\n'+
+     '2. **Lector de código de barras / QR:** Para escanear cajas desde la cámara del teléfono.\n'+
+     '3. **Rastreo GPS de camiones:** Visualización en mapa real del trayecto entre bodega central y Jalapa/Zacapa.\n'+
+     '4. **Alertas Push automáticas:** Avisos cuando un producto baje de stock o cuando llegue un camión sin tener que mirar la pantalla.\n'+
+     '5. **Sincronización multi-usuario en la nube:** Base de datos para que cada sucursal solicite desde su propio teléfono.';
+   }
+   else {
+    reply='Entendido. Como Gerente General puedo darte un reporte completo de operaciones, organizar lotes, comprar insumos o despachar camiones. ¿Qué deseas coordinar?';
+   }
+
+   managerMessages.push({role:'bot',text:reply,action:proposedAction});
+   managerPendingAction=proposedAction;
+   window.managerPendingAction=proposedAction;
+   save();
+   openPanel('manager');
+   speakManagerVoice(reply);
   }
-  else if(actionObj.type==='inspect_cold'){
-   queueInspection();
-   managerMessages.push({role:'bot',text:'❄️ Tarea de inspección de cámara fría asignada a un operario disponible.'});
+
+  function executeManagerAction(actionObj){
+   if(!actionObj)return;
+   let execMsg='';
+   if(actionObj.type==='organize_all'){
+    const count=queueAllBins();
+    execMsg='🚀 **Órdenes ejecutadas:** He asignado a '+count+' lote(s) al equipo de operarios. Ya están en camino a mover las cajas.';
+   }
+   else if(actionObj.type==='reorder_low'){
+    const low=data.inventory.filter(p=>availableQty(p.id)<p.min);
+    const lines=low.map(p=>({prod:p.id,qty:Math.max(10,p.min*2-p.qty),received:0,price:CATALOG[p.id]}));
+    const total=lines.reduce((s,l)=>s+l.qty*l.price,0);
+    if(total>data.cash){
+     execMsg='❌ No hay suficiente presupuesto ('+money(data.cash)+') para cubrir el total de '+money(total)+'.';
+    } else {
+     const o={id:'OC-'+data.purchaseSeq++,supplier:'central',supplierName:SUPPLIERS['central'],destination:'central',request:'',lines,total,eta:25,status:'En camino',receiptClosed:false,note:'Compra automática por Gerente General IA',created:new Date().toISOString()};
+     data.purchases.push(o);
+     data.cash=Math.round((data.cash-total)*100)/100;
+     log('PEDIDO GERENTE IA',`${o.id} · ${money(total)} · Reposición automática de ${low.length} productos`);
+     execMsg='🛒 **Compra generada:** Orden **'+o.id+'** creada por '+money(total)+'. Llegará a recepción en 25 segundos.';
+    }
+   }
+   else if(actionObj.type==='approve_all_requests'){
+    const pend=data.requests.filter(r=>r.status==='Pendiente');
+    for(const r of pend){
+     r.status='Aprobado';
+     log('APROBACIÓN GERENTE IA',`${r.id} · ${r.branch} autorizada`);
+    }
+    execMsg='✅ He aprobado **'+pend.length+' solicitud(es)** de sucursales. Ya están listas para preparación.';
+   }
+   else if(actionObj.type==='prepare_all'){
+    const appr=data.requests.filter(r=>r.status==='Aprobado');
+    let c=0;
+    for(const r of appr){
+     if(queueDispatch(r.id))c++;
+    }
+    execMsg='👷 He asignado al personal la preparación de **'+c+' solicitud(es)**.';
+   }
+   else if(actionObj.type==='dispatch_all'){
+    const ready=data.requests.filter(r=>r.status==='Preparado');
+    for(const r of ready){
+     confirmDispatch(r.id);
+    }
+    execMsg='🚚 **Camiones en ruta:** Se confirmaron los despachos de '+ready.length+' pedido(s). Los vehículos van rumbo a su destino.';
+   }
+   else if(actionObj.type==='inspect_cold'){
+    queueInspection();
+    execMsg='❄️ Tarea de inspección de cámara fría asignada a un operario disponible.';
+   }
+   managerMessages.push({role:'bot',text:execMsg});
+   managerPendingAction=null;
+   window.managerPendingAction=null;
+   flush();
+   openPanel('manager');
+   speakManagerVoice(execMsg);
   }
-  managerPendingAction=null;
-  window.managerPendingAction=null;
-  flush();
-  openPanel('manager');
- }
 
- if(name==='manager'){
-  const lowCount=data.inventory.filter(p=>availableQty(p.id)<p.min).length;
-  const unassignedBins=data.bins.filter(b=>!b.stored&&!data.jobs.some(j=>j.bin===b.id&&['queued','active'].includes(j.status))).length;
-  const pendRequests=data.requests.filter(r=>r.status==='Pendiente').length;
-  const readyDispatch=data.requests.filter(r=>r.status==='Preparado').length;
+  if(name==='manager'){
+   const lowCount=data.inventory.filter(p=>availableQty(p.id)<p.min).length;
+   const unassignedBins=data.bins.filter(b=>!b.stored&&!data.jobs.some(j=>j.bin===b.id&&['queued','active'].includes(j.status))).length;
+   const pendRequests=data.requests.filter(r=>r.status==='Pendiente').length;
+   const readyDispatch=data.requests.filter(r=>r.status==='Preparado').length;
 
-  return `
-   <div class="note warm" style="display:flex;align-items:center;gap:10px">
-    <div style="font-size:24px">🤖</div>
-    <div><strong>Gerente General Autónomo</strong><br>Supervisa el flujo, asigna tareas a los trabajadores y toma decisiones operativas bajo tu confirmación.</div>
-   </div>
+   return `
+    <div class="note warm" style="display:flex;align-items:center;gap:10px">
+     <div style="font-size:24px">🤖</div>
+     <div><strong>Gerente General Autónomo</strong><br>Supervisa el flujo, habla en voz alta, recibe comandos de voz y coordina a todo tu equipo.</div>
+    </div>
 
-   <div class="kpi-row">
-    <div class="kpi-card"><small>Presupuesto</small><b>${money(data.cash)}</b></div>
-    <div class="kpi-card"><small>Stock Crítico</small><b style="color:${lowCount?'#d44':'#2a8'}">${lowCount} prod.</b></div>
-    <div class="kpi-card"><small>Lotes libres</small><b>${unassignedBins}</b></div>
-    <div class="kpi-card"><small>Solicitudes</small><b>${pendRequests}</b></div>
-    <div class="kpi-card"><small>Listos despacho</small><b>${readyDispatch}</b></div>
-   </div>
-
-   <div class="quick-chips">
-    <button class="chip" data-ai-prompt="¿Cuál es el estado de la bodega y qué falta?">📊 Diagnóstico y qué falta</button>
-    <button class="chip" data-ai-prompt="Pon a los trabajadores a acomodar los lotes de recepción">📦 Mover lotes al almacén</button>
-    <button class="chip" data-ai-prompt="Revisar y reponer productos con stock bajo mínimo">🛒 Reponer mínimos</button>
-    <button class="chip" data-ai-prompt="Aprobar las solicitudes de sucursales pendientes">📋 Aprobar solicitudes</button>
-    <button class="chip" data-ai-prompt="Manda a preparar los pedidos aprobados">👷 Preparar pedidos</button>
-    <button class="chip" data-ai-prompt="Despachar todos los pedidos listos en el muelle">🚚 Despachar camiones</button>
-    <button class="chip" data-ai-prompt="¿Qué necesito implementar en el sistema?">🛠️ Qué falta implementar</button>
-    <button class="chip" data-ai-prompt="Manda a inspeccionar la cámara fría">❄️ Inspeccionar frío</button>
-   </div>
-
-   <div class="manager-chat" id="managerChatBox">
-    ${managerMessages.map(m=>`
-     <div class="msg ${m.role}">
-      <div class="msg-avatar">${m.role==='bot'?'IA':'TÚ'}</div>
-      <div class="msg-bubble">
-       ${esc(m.text).replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}
-       ${m.action ? `
-        <div class="confirm-box">
-         <h4>⚠️ Acción propuesta por el Gerente:</h4>
-         <p>${esc(m.action.desc)}</p>
-         <div class="confirm-actions">
-          <button class="primary" data-action="managerConfirm">Autorizar y ejecutar</button>
-          <button class="secondary" data-action="managerReject">Cancelar</button>
-         </div>
-        </div>
-       `:''}
-      </div>
+    <div class="voice-bar">
+     <div class="voice-bar-info">
+      <span>${icon('bot')}</span>
+      <span>Voz del Gerente: <strong>${window.managerVoiceEnabled?'Activada 🔊':'Silenciada 🔇'}</strong></span>
      </div>
-    `).join('')}
-   </div>
+     <div class="voice-bar-actions">
+      <button class="voice-action-btn ${window.managerVoiceEnabled?'active':''}" data-action="managerToggleVoice" title="Activar/desactivar respuestas habladas">
+       ${icon(window.managerVoiceEnabled?'speaker':'speakerMute')} ${window.managerVoiceEnabled?'Voz On':'Voz Off'}
+      </button>
+      <button class="voice-action-btn" data-action="managerStopVoice" title="Detener voz actual">
+       ${icon('stop')} Silenciar
+      </button>
+      <button class="voice-action-btn" data-ai-prompt="Dame un reporte completo de todo lo que pasa en la bodega y sucursales" style="background:#fff3e6;color:#d36b13;border-color:#f1cfa8">
+       ${icon('speaker')} Reporte hablado
+      </button>
+     </div>
+    </div>
 
-   <div class="chat-input-bar">
-    <input id="managerInput" type="text" placeholder="Escribe al Gerente: ej. 'organiza los lotes', 'qué falta', 'reponer stock'..." autocomplete="off">
-    <button id="managerSendBtn" data-action="managerSend" aria-label="Enviar">${icon('send')}</button>
-   </div>
-  `;
- }
- return baseRenderPanel(name,context);
-};
-const baseAction=action;
-action=function(a){const [kind,...parts]=a.split(':'),id=parts.join(':');
- if(kind==='managerSend'){
-  const inp=$('#managerInput');
-  if(inp){runManagerCommand(inp.value);inp.value=''}
-  return;
- }
- if(kind==='managerConfirm'){
-  if(window.managerPendingAction){
-   executeManagerAction(window.managerPendingAction);
+    <div class="kpi-row">
+     <div class="kpi-card"><small>Presupuesto</small><b>${money(data.cash)}</b></div>
+     <div class="kpi-card"><small>Stock Crítico</small><b style="color:${lowCount?'#d44':'#2a8'}">${lowCount} prod.</b></div>
+     <div class="kpi-card"><small>Lotes libres</small><b>${unassignedBins}</b></div>
+     <div class="kpi-card"><small>Solicitudes</small><b>${pendRequests}</b></div>
+     <div class="kpi-card"><small>Listos despacho</small><b>${readyDispatch}</b></div>
+    </div>
+
+    <div class="quick-chips">
+     <button class="chip" data-ai-prompt="Dame un reporte completo de todo lo que pasa en la bodega y sucursales" style="background:#fff3e6;color:#d36b13;border-color:#f1cfa8">🎙️ Reporte hablado completo</button>
+     <button class="chip" data-ai-prompt="Pon a los trabajadores a acomodar los lotes de recepción">📦 Mover lotes al almacén</button>
+     <button class="chip" data-ai-prompt="Revisar y reponer productos con stock bajo mínimo">🛒 Reponer mínimos</button>
+     <button class="chip" data-ai-prompt="Aprobar las solicitudes de sucursales pendientes">📋 Aprobar solicitudes</button>
+     <button class="chip" data-ai-prompt="Manda a preparar los pedidos aprobados">👷 Preparar pedidos</button>
+     <button class="chip" data-ai-prompt="Despachar todos los pedidos listos en el muelle">🚚 Despachar camiones</button>
+     <button class="chip" data-ai-prompt="¿Qué necesito implementar en el sistema?">🛠️ Qué falta implementar</button>
+     <button class="chip" data-ai-prompt="Manda a inspeccionar la cámara fría">❄️ Inspeccionar frío</button>
+    </div>
+
+    <div class="manager-chat" id="managerChatBox">
+     ${managerMessages.map(m=>`
+      <div class="msg ${m.role}">
+       <div class="msg-avatar">${m.role==='bot'?'IA':'TÚ'}</div>
+       <div class="msg-bubble">
+        ${esc(m.text).replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}
+        ${m.action ? `
+         <div class="confirm-box">
+          <h4>⚠️ Acción propuesta por el Gerente:</h4>
+          <p>${esc(m.action.desc)}</p>
+          <div class="confirm-actions">
+           <button class="primary" data-action="managerConfirm">Autorizar y ejecutar</button>
+           <button class="secondary" data-action="managerReject">Cancelar</button>
+          </div>
+         </div>
+        `:''}
+       </div>
+      </div>
+     `).join('')}
+    </div>
+
+    <div class="chat-input-bar">
+     <button id="managerMicBtn" class="mic-btn ${isVoiceActive?'listening':''}" data-action="managerMic" aria-label="Hablar comando" title="Toca para hablar por micrófono">${icon('mic')}</button>
+     <input id="managerInput" type="text" placeholder="${isVoiceActive?'🎙️ Escuchando... Di: Dame un reporte de todo lo que pasa':'Escribe o usa el micrófono para hablar con el Gerente...'}" autocomplete="off">
+     <button id="managerSendBtn" data-action="managerSend" aria-label="Enviar">${icon('send')}</button>
+    </div>
+   `;
   }
-  return;
- }
- if(kind==='managerReject'){
-  window.managerPendingAction=null;
-  window.managerChatMessages.push({role:'bot',text:'Acción cancelada por el usuario.'});
-  openPanel('manager');
-  return;
- }
+  return baseRenderPanel(name,context);
+ };
+ const baseAction=action;
+ action=function(a){const [kind,...parts]=a.split(':'),id=parts.join(':');
+  if(kind==='managerMic'){
+   toggleVoiceRecognition();
+   return;
+  }
+  if(kind==='managerToggleVoice'){
+   window.managerVoiceEnabled=!window.managerVoiceEnabled;
+   if(!window.managerVoiceEnabled)stopManagerSpeech();
+   toast(window.managerVoiceEnabled?'🔊 Voz del Gerente activada':'🔇 Voz del Gerente silenciada');
+   openPanel('manager');
+   return;
+  }
+  if(kind==='managerStopVoice'){
+   stopManagerSpeech();
+   return;
+  }
+  if(kind==='managerSend'){
+   const inp=$('#managerInput');
+   if(inp){runManagerCommand(inp.value);inp.value=''}
+   return;
+  }
+  if(kind==='managerConfirm'){
+   if(window.managerPendingAction){
+    executeManagerAction(window.managerPendingAction);
+   }
+   return;
+  }
+  if(kind==='managerReject'){
+   window.managerPendingAction=null;
+   window.managerChatMessages.push({role:'bot',text:'Acción cancelada por el usuario.'});
+   openPanel('manager');
+   return;
+  }
 
  if(kind==='submitRequest'){submitRequest();return}if(kind==='approve'){approveRequest(id);return}if(kind==='prepare'){if(queueDispatch(id)){closePanel();focusZone('prep')}return}if(kind==='prepareWorker'){if(queueDispatch(parts[1],parts[0])){closePanel();focusZone('prep')}return}if(kind==='cancelPrep'){cancelPreparation(id);openPanel('prep');return}if(kind==='ship'){confirmDispatch(id);return}if(kind==='arrive'){confirmDestination(id);return}if(kind==='requestPurchase'){purchaseForRequest(id);return}if(kind==='saveWorker'){editWorker(id);return}if(kind==='saveConfig'){saveConfiguration();return}if(kind==='saveProduct'){saveProduct(id);return}if(kind==='resolveSave'){resolveDiscrepancy(id);return}
  if(kind==='exportBackup'){flush();download('logistic_control_copia.json',JSON.stringify({format:'logistic-control-v5',data:{...data,workers:workers.map(({path,walk,manual,...w})=>w)}},null,2),'application/json');return}
